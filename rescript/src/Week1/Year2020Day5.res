@@ -35,10 +35,10 @@ let rec search = (directions: array<string>, left: float, right: float): int => 
     let direction = directions->Array.get(0)->Option.getWithDefault("")
     let diff = right -. left
     if direction === "F" || direction === "L" {
-      let removed = directions->Js.Array2.shift
+      let _ = directions->Js.Array2.shift
       search(directions, left, right -. Js.Math.ceil_float(diff /. 2.0))
     } else if direction === "B" || direction === "R" {
-      let removed = directions->Js.Array2.shift
+      let _ = directions->Js.Array2.shift
       search(directions, left +. Js.Math.ceil_float(diff /. 2.0), right)
     } else {
       -1
