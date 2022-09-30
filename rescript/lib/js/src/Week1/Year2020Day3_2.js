@@ -20,7 +20,9 @@ function contains(str, index, $$char) {
   }
 }
 
-function executor(arr, x, y) {
+function executor(arr, param) {
+  var y = param[1];
+  var x = param[0];
   return Belt_Array.reduceWithIndex(arr, 0.0, (function (matchCnt, item, index) {
                 if (index > 0 && Caml_int32.mod_(index, y) === 0 && contains(item, Caml_int32.mod_(Math.imul(x, Js_math.floor_int(Caml_int32.div(index, y))), item.length), "#")) {
                   return matchCnt + 1.0;
@@ -32,35 +34,47 @@ function executor(arr, x, y) {
 
 var parsedInput = input.trim().split("\n");
 
-console.log(contains("#..##..#...##............#..##.", 3, "#"));
+console.log(executor(parsedInput, [
+          3,
+          1
+        ]));
 
-console.log(contains("#..##..#...##............#..##.", 0, "#"));
+var coords = [
+  [
+    1,
+    1
+  ],
+  [
+    3,
+    1
+  ],
+  [
+    5,
+    1
+  ],
+  [
+    7,
+    1
+  ],
+  [
+    1,
+    2
+  ]
+];
 
-console.log(contains("#..##..#...##............#..##.", 3, "#"));
+function multiplyResults(input, coordTuples) {
+  return Belt_Array.reduce(coordTuples, 1, (function (sum, coord) {
+                return sum * executor(input, coord);
+              }));
+}
 
-console.log(contains("#..##..#...##............#..##.", 4, "#"));
-
-console.log(contains("#..##..#...##............#..##.", 5, "#"));
-
-console.log(Belt_Array.get(parsedInput, 1));
-
-console.log(Belt_Array.get(parsedInput, 322));
-
-console.log(executor(parsedInput, 1, 1));
-
-console.log(executor(parsedInput, 3, 1));
-
-console.log(executor(parsedInput, 5, 1));
-
-console.log(executor(parsedInput, 7, 1));
-
-console.log(executor(parsedInput, 1, 2));
-
-console.log(executor(parsedInput, 1, 1) * executor(parsedInput, 3, 1) * executor(parsedInput, 5, 1) * executor(parsedInput, 7, 1) * executor(parsedInput, 1, 2));
+console.log(multiplyResults(parsedInput, coords));
 
 exports.input = input;
 exports.parser = parser;
 exports.contains = contains;
 exports.executor = executor;
 exports.parsedInput = parsedInput;
+exports.coords = coords;
+exports.multiplyResults = multiplyResults;
 /* input Not a pure module */
