@@ -3,6 +3,7 @@
 
 var Js_math = require("rescript/lib/js/js_math.js");
 var Belt_Array = require("rescript/lib/js/belt_Array.js");
+var Belt_Option = require("rescript/lib/js/belt_Option.js");
 var Belt_SortArrayInt = require("rescript/lib/js/belt_SortArrayInt.js");
 var Year2020Day5Input = require("./Year2020Day5Input.js");
 
@@ -41,14 +42,35 @@ function searchWithin(directions) {
   }
 }
 
-console.log(Belt_Array.get(Belt_SortArrayInt.stableSort(Belt_Array.map(boardingPasses, (function (pass) {
-                    var row = searchWithin(getRowDirections(pass));
-                    var col = searchWithin(getSeatDirections(pass));
-                    return (row << 3) + col | 0;
-                  }))), boardingPasses.length - 1 | 0));
+var seatIds = Belt_SortArrayInt.stableSort(Belt_Array.map(boardingPasses, (function (pass) {
+            var row = searchWithin(getRowDirections(pass));
+            var col = searchWithin(getSeatDirections(pass));
+            return (row << 3) + col | 0;
+          })));
+
+console.log(Belt_Array.get(seatIds, boardingPasses.length - 1 | 0), "is the highest ID from the list");
+
+function findMySeat(ids) {
+  var prevSeatIdx = ids.findIndex(function (id) {
+        return !ids.includes(id + 1 | 0);
+      });
+  if (!(prevSeatIdx >= 0 && prevSeatIdx < ids.length)) {
+    return -1;
+  }
+  var mySeatIdx = Belt_Option.getWithDefault(Belt_Array.get(ids, prevSeatIdx), -1);
+  if (mySeatIdx > 0) {
+    return mySeatIdx + 1 | 0;
+  } else {
+    return -1;
+  }
+}
+
+console.log(findMySeat(seatIds), "is my seat");
 
 exports.boardingPasses = boardingPasses;
 exports.getRowDirections = getRowDirections;
 exports.getSeatDirections = getSeatDirections;
 exports.searchWithin = searchWithin;
+exports.seatIds = seatIds;
+exports.findMySeat = findMySeat;
 /* boardingPasses Not a pure module */

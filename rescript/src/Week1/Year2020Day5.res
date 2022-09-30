@@ -35,23 +35,30 @@ let searchWithin = (directions: array<string>) => {
 //["F", "F", "F", "F", "F", "F", "F"]->searchWithin->Js.log // 0
 //["B", "B", "B", "B", "B", "B", "B"]->searchWithin->Js.log // 127
 
+let seatIds: array<int> =
+  boardingPasses
+  ->Array.map(pass => {
+    let row = pass->getRowDirections->searchWithin
+    let col = pass->getSeatDirections->searchWithin
+    row * 8 + col
+  })
+  ->Belt.SortArray.Int.stableSort
+
 // Part #1
-boardingPasses
-->Array.map(pass => {
-  let row = pass->getRowDirections->searchWithin
-  let col = pass->getSeatDirections->searchWithin
-  row * 8 + col
-})
-->Belt.SortArray.Int.stableSort
-->Array.get(boardingPasses->Array.length - 1)
-->Js.log
+seatIds->Array.get(boardingPasses->Array.length - 1)->Js.log2("is the highest ID from the list")
 
 // Part #2
-//boardingPasses
-//->Array.reduce([], (arr, pass) => {
-//  let row = pass->getRowDirections->searchWithin
-//  let col = pass->getSeatDirections->searchWithin
-//
-//  arr[pass] = 0
-//})
-//->Js.log
+// There must be the seat ID of -1/+1 from mine on the list.
+let findMySeat = (ids: array<int>): int => {
+  let prevSeatIdx = ids->Js.Array2.findIndex(id => !(ids->Js.Array2.includes(id + 1)))
+
+  if prevSeatIdx >= 0 && prevSeatIdx < ids->Js.Array2.length {
+    let mySeatIdx = ids->Array.get(prevSeatIdx)->Option.getWithDefault(-1)
+    mySeatIdx > 0 ? mySeatIdx + 1 : -1
+  } else {
+    -1
+  }
+}
+
+seatIds->findMySeat->Js.log2("is my seat")
+//[2, 3, 4, 6, 7, 8]->findMySeat->Js.log2("is my seat") // 5
