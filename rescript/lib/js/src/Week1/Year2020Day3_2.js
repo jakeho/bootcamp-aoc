@@ -62,13 +62,19 @@ var coords = [
   ]
 ];
 
-function multiplyResults(input, coordTuples) {
-  return Belt_Array.reduce(coordTuples, 1, (function (sum, coord) {
-                return sum * executor(input, coord);
+function getResults(input, coordTuples) {
+  return Belt_Array.map(coordTuples, (function (coord) {
+                return executor(input, coord);
               }));
 }
 
-console.log(multiplyResults(parsedInput, coords));
+function multiplyResults(treesForCoords) {
+  return Belt_Array.reduce(treesForCoords, 1, (function (sum, count) {
+                return sum * count;
+              }));
+}
+
+console.log(multiplyResults(getResults(parsedInput, coords)));
 
 exports.input = input;
 exports.parser = parser;
@@ -76,5 +82,6 @@ exports.contains = contains;
 exports.executor = executor;
 exports.parsedInput = parsedInput;
 exports.coords = coords;
+exports.getResults = getResults;
 exports.multiplyResults = multiplyResults;
 /* input Not a pure module */

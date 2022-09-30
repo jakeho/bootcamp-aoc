@@ -58,12 +58,28 @@ parsedInput->executor((3, 1))->Js.log // 162
 //parsedInput->executor((1, 2))->Js.log // 37
 // all *. => 3064612320
 
+// Set the coordinates as tuples in an array.
 let coords = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
 
-let multiplyResults = (input: array<string>, coordTuples: array<(int, int)>): float => {
-  coordTuples->Array.reduce(1., (sum, coord: (int, int)) => {
-    sum *. input->executor(coord)
+// Get the count of the trees met for each coordination.
+let getResults = (input: array<string>, ~coordTuples: array<(int, int)>): array<float> => {
+  coordTuples->Array.map(coord => input->executor(coord))
+}
+
+// Multiply the counts using Array.reduce
+let multiplyResults = (treesForCoords: array<float>): float => {
+  treesForCoords->Array.reduce(1., (sum, count) => {
+    sum *. count
   })
 }
 //getResult(parsedInput)(coords)->Js.log
-parsedInput->multiplyResults(coords)->Js.log
+parsedInput->getResults(~coordTuples=coords)->multiplyResults->Js.log
+
+// input
+// parse: input -> map
+// executor: map -> steps -> collisionCounts
+// reduce: collisionCounts -> multiply
+
+// @react.component <- 어트리뷰트 <- ppx: PreProcessor
+// let x = %raw(`var x = 1`) <- 익스텐션
+// let make = (~x, ~y) => ...
