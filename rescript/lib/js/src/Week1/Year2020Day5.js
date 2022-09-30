@@ -42,9 +42,37 @@ function searchWithin(directions) {
   }
 }
 
+function search(directions, _left, _right) {
+  while(true) {
+    var right = _right;
+    var left = _left;
+    if (left === right) {
+      return left | 0;
+    }
+    var direction = Belt_Option.getWithDefault(Belt_Array.get(directions, 0), "");
+    var diff = right - left;
+    if (direction === "F" || direction === "L") {
+      directions.shift();
+      _right = right - Math.ceil(diff / 2.0);
+      continue ;
+    }
+    if (!(direction === "B" || direction === "R")) {
+      return -1;
+    }
+    directions.shift();
+    _left = left + Math.ceil(diff / 2.0);
+    continue ;
+  };
+}
+
+function searchWithin2(directions) {
+  var right = Math.pow(2, directions.length) - 1;
+  return search(directions, 0, right);
+}
+
 var seatIds = Belt_SortArrayInt.stableSort(Belt_Array.map(boardingPasses, (function (pass) {
-            var row = searchWithin(getRowDirections(pass));
-            var col = searchWithin(getSeatDirections(pass));
+            var row = searchWithin2(getRowDirections(pass));
+            var col = searchWithin2(getSeatDirections(pass));
             return (row << 3) + col | 0;
           })));
 
@@ -71,6 +99,8 @@ exports.boardingPasses = boardingPasses;
 exports.getRowDirections = getRowDirections;
 exports.getSeatDirections = getSeatDirections;
 exports.searchWithin = searchWithin;
+exports.search = search;
+exports.searchWithin2 = searchWithin2;
 exports.seatIds = seatIds;
 exports.findMySeat = findMySeat;
 /* boardingPasses Not a pure module */

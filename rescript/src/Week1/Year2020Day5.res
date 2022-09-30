@@ -28,6 +28,30 @@ let searchWithin = (directions: array<string>) => {
   min.contents === max.contents ? max.contents : 0
 }
 
+let rec search = (directions: array<string>, left: float, right: float): int => {
+  if left === right {
+    left->Int.fromFloat
+  } else {
+    let direction = directions->Array.get(0)->Option.getWithDefault("")
+    let diff = right -. left
+    if direction === "F" || direction === "L" {
+      let removed = directions->Js.Array2.shift
+      search(directions, left, right -. Js.Math.ceil_float(diff /. 2.0))
+    } else if direction === "B" || direction === "R" {
+      let removed = directions->Js.Array2.shift
+      search(directions, left +. Js.Math.ceil_float(diff /. 2.0), right)
+    } else {
+      -1
+    }
+  }
+}
+
+let searchWithin2 = (directions: array<string>) => {
+  let left = 0.
+  let right = 2. ** Float.fromInt(directions->Array.length) -. 1.
+  search(directions, left, right)
+}
+
 //"BBFFBFFRRR" |> getRowDirections |> Js.log // [ 'B', 'B', 'F','F', 'B', 'F','F' ]
 //"BBFFBFFRRR"->getSeatDirections->Js.log // [ 'R', 'R', 'R' ]
 
@@ -38,8 +62,8 @@ let searchWithin = (directions: array<string>) => {
 let seatIds: array<int> =
   boardingPasses
   ->Array.map(pass => {
-    let row = pass->getRowDirections->searchWithin
-    let col = pass->getSeatDirections->searchWithin
+    let row = pass->getRowDirections->searchWithin2
+    let col = pass->getSeatDirections->searchWithin2
     row * 8 + col
   })
   ->Belt.SortArray.Int.stableSort
