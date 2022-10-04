@@ -91,14 +91,22 @@ let findPrevSeat = (ids: array<int>): option<int> => {
   ids->Js.Array2.find(id => !(ids->Js.Array2.includes(id + 1)))
 }
 
-let findEmptySeat = (prevSeat: option<int>): int => {
-  switch prevSeat {
-  | Some(prevSeat) => prevSeat + 1
-  | None => -1
-  }
-}
+// let findEmptySeat = (prevSeat: option<int>): int => {
+//   switch prevSeat {
+//   | Some(prevSeat) => prevSeat + 1
+//   | None => -1
+//   }
+// }
+let findEmptySeat = (prevSeat: option<int>): option<int> => prevSeat->Option.map(s => s + 1)
 
-seatIds->findPrevSeat->findEmptySeat->Js.log2("is my seat")
+let print = a =>
+  switch a {
+  | Some(a) => Js.log(`${a} is my seat`)
+  | None => Js.log(`can't find my seat`)
+  }
+
+// seatIds->findPrevSeat->findEmptySeat->Js.log2("is my seat")
+// seatIds->findPrevSeat->findEmptySeat->print
 //[2, 3, 4, 6, 7, 8]->findMySeat->Js.log2("is my seat") // 5
 
 // Option 타입과 Array
