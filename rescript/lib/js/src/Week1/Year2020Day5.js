@@ -4,6 +4,7 @@
 var Js_math = require("rescript/lib/js/js_math.js");
 var Belt_Array = require("rescript/lib/js/belt_Array.js");
 var Belt_Option = require("rescript/lib/js/belt_Option.js");
+var Caml_option = require("rescript/lib/js/caml_option.js");
 var Belt_SortArrayInt = require("rescript/lib/js/belt_SortArrayInt.js");
 var Year2020Day5Input = require("./Year2020Day5Input.js");
 
@@ -82,18 +83,32 @@ function findMySeat(ids) {
   var prevSeatIdx = ids.findIndex(function (id) {
         return !ids.includes(id + 1 | 0);
       });
-  if (!(prevSeatIdx >= 0 && prevSeatIdx < ids.length)) {
+  if (prevSeatIdx < 0) {
     return -1;
   }
-  var mySeatIdx = Belt_Option.getWithDefault(Belt_Array.get(ids, prevSeatIdx), -1);
-  if (mySeatIdx > 0) {
-    return mySeatIdx + 1 | 0;
+  var mySeatId = Belt_Option.getWithDefault(Belt_Array.get(ids, prevSeatIdx), -1);
+  if (mySeatId > 0) {
+    return mySeatId + 1 | 0;
   } else {
     return -1;
   }
 }
 
-console.log(findMySeat(seatIds), "is my seat");
+function findPrevSeat(ids) {
+  return Caml_option.undefined_to_opt(ids.find(function (id) {
+                  return !ids.includes(id + 1 | 0);
+                }));
+}
+
+function findEmptySeat(prevSeat) {
+  if (prevSeat !== undefined) {
+    return prevSeat + 1 | 0;
+  } else {
+    return -1;
+  }
+}
+
+console.log(findEmptySeat(findPrevSeat(seatIds)), "is my seat");
 
 exports.boardingPasses = boardingPasses;
 exports.getRowDirections = getRowDirections;
@@ -103,4 +118,6 @@ exports.search = search;
 exports.searchWithin2 = searchWithin2;
 exports.seatIds = seatIds;
 exports.findMySeat = findMySeat;
+exports.findPrevSeat = findPrevSeat;
+exports.findEmptySeat = findEmptySeat;
 /* boardingPasses Not a pure module */

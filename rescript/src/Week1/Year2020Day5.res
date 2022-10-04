@@ -28,6 +28,7 @@ let searchWithin = (directions: array<string>) => {
   min.contents === max.contents ? max.contents : 0
 }
 
+// 꼬리재귀 tail recursion
 let rec search = (directions: array<string>, left: float, right: float): int => {
   if left === right {
     left->Int.fromFloat
@@ -74,15 +75,43 @@ seatIds->Array.get(boardingPasses->Array.length - 1)->Js.log2("is the highest ID
 // Part #2
 // There must be the seat ID of -1/+1 from mine on the list.
 let findMySeat = (ids: array<int>): int => {
+  // index 사용하지 않고 풀 수 있을까?
   let prevSeatIdx = ids->Js.Array2.findIndex(id => !(ids->Js.Array2.includes(id + 1)))
 
-  if prevSeatIdx >= 0 && prevSeatIdx < ids->Js.Array2.length {
-    let mySeatIdx = ids->Array.get(prevSeatIdx)->Option.getWithDefault(-1)
-    mySeatIdx > 0 ? mySeatIdx + 1 : -1
+  if prevSeatIdx >= 0 {
+    // Option.getWithDefault 없이 개선해보기, pattern matching으로 해보기
+    let mySeatId = ids->Array.get(prevSeatIdx)->Option.getWithDefault(-1)
+    mySeatId > 0 ? mySeatId + 1 : -1
   } else {
     -1
   }
 }
 
-seatIds->findMySeat->Js.log2("is my seat")
+let findPrevSeat = (ids: array<int>): option<int> => {
+  ids->Js.Array2.find(id => !(ids->Js.Array2.includes(id + 1)))
+}
+
+let findEmptySeat = (prevSeat: option<int>): int => {
+  switch prevSeat {
+  | Some(prevSeat) => prevSeat + 1
+  | None => -1
+  }
+}
+
+seatIds->findPrevSeat->findEmptySeat->Js.log2("is my seat")
 //[2, 3, 4, 6, 7, 8]->findMySeat->Js.log2("is my seat") // 5
+
+// Option 타입과 Array
+// type option<int> = Some(int) | None = undefined
+// e.g. Array.get(n): option<'a>
+// fn: Promise
+// 펑터 Functor, 모나드 Monad
+
+// Array, List idx
+// arr->Array.map(mapFn)->Array.keep(checkFn)->Array.reduce(fn) AVL tree
+// x:option<int>->Option.map(mapFn)->Option.getWithDefault(y)
+// optional chaining a?.b?.c
+
+// O(n)
+
+// type color = Red | Yellow | Blue
