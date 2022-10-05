@@ -27,75 +27,73 @@ let flatten = (arr: array<option<array<'a>>>): array<'b> =>
   arr->Array.map(arr => arr->Option.map(arr => arr->Array.concatMany))
 */
 
-let trimAndSplit = (str: string, regExp: Js_re.t): array<option<string>> =>
-  str->Js.String2.trim->Js.String2.splitByRe(regExp)
+// identityFn
+let id = x => x
 
-let splitGroup = (str: string): array<option<string>> => str->trimAndSplit(%re("/\\n\\n/g"))
+let trimAndSplit = (str: string, regExp: Js_re.t): array<string> =>
+  str->Js.String2.trim->Js.String2.splitByRe(regExp)->Array.keepMap(id)
 
-let splitLine = (str: string): array<option<string>> => str->trimAndSplit(%re("/\\n/g"))
+let splitGroup = (str: string): array<string> => str->trimAndSplit(%re("/\\n\\n/g"))
 
-let splitChar = (str: string): array<option<string>> => str->trimAndSplit(%re("/\\B/g"))
+let splitLine = (str: string): array<string> => str->trimAndSplit(%re("/\\n/g"))
 
-let splitGroupAndLine = (str: string, lineSplitter: 'a => array<option<'a>>) => {
-  str
-  ->splitGroup
-  ->Array.map(arr => {
-    arr->Option.map(opt => opt->lineSplitter)
-  })
+let splitChar = (str: string): array<string> => str->trimAndSplit(%re("/\\B/g"))
+
+let splitGroupAndLine = (str: string, lineSplitter: string => array<string>): array<
+  array<string>,
+> => {
+  str->splitGroup->Array.map(lineSplitter)
 }
 
-let dedupe = (strArr: array<option<string>>) => {
-  strArr->Array.map(str => str->Option.getWithDefault(""))->Set.String.fromArray->Set.String.toArray
+let dedupe = (strArr: array<string>) => {
+  strArr->Set.String.fromArray->Set.String.toArray
+}
+
+let intersect = (strArrX: array<string>, strArrY: array<string>) => {
+  let setX = strArrX->Set.String.fromArray
+  let setY = strArrY->Set.String.fromArray
+
+  setX->Set.String.intersect(setY)->Set.String.toArray
 }
 
 // Part 1
+// Union
+Js.log("Part 1")
 let getAnswerPart1 = (str: string) => {
   str
   ->splitGroupAndLine(splitLine)
-  ->Array.map(arr => {
-    // [ 'abc' ] [ 'a', 'b', 'c' ] [ 'ab', 'ac' ] [ 'a', 'a', 'a', 'a' ] [ 'b' ]
-    arr->Option.map(optArr => {
-      optArr
-      ->Array.map(answers => answers->Option.getWithDefault("")->splitChar)
-      ->flatten
-      ->dedupe
-      ->Array.length
-    })
-  })
-  ->Array.reduce(0, (sum, n) => sum + n->Option.getWithDefault(0))
+  ->Array.map(arr => arr->Array.map(answers => answers->splitChar)->flatten->dedupe->Array.length)
+  ->Array.reduce(0, (sum, n) => sum + n)
 }
 
 sample->getAnswerPart1->Js.log // 11
 Year2020Day6Input.input->getAnswerPart1->Js.log // 6726
 
-/*
-let byQuestion = (arr: array<option<string>>): array<string> =>
-  arr->Array.map(opt => opt->Option.getWithDefault("")->Js.String2.split(""))->flatten
+// Part 2
+// Intersect
+Js.log("\n\nPart 2")
+let getAnswerPart2 = (str: string) => {
+  str
+  ->splitGroupAndLine(splitLine) // [ [abc], [a,b,c], ... ] array<array<string>>
+  ->Array.map(arr => {
+    let setArr = arr->Array.map(answers => {
+      answers->splitChar->Set.String.fromArray
+    })
 
-let dedupe = (arr: array<string>): array<string> => {
-  let newArr: array<string> = Array.make(-1, "")
-  let _ = arr->Array.forEach(el => {
-    let _ = switch newArr->Js.Array2.includes(el) {
-    | true => -1
-    | false => newArr->Js.Array2.push(el)
-    }
+    let compareSet = setArr->Array.get(0)
+
+    compareSet
+    ->Option.mapWithDefault(Set.String.empty, compareSet =>
+      setArr->Array.reduce(compareSet, Set.String.intersect)
+    )
+    ->Set.String.size
+    //    switch compareSet {
+    //    | Some(cs) => setArr->Array.reduce(cs, Set.String.intersect)
+    //    | None => assert false
+    //    }->Set.String.size
   })
-  newArr
+  ->Array.reduce(0, (sum, n) => sum + n)
 }
 
-//let sumDedupeWeight = (arr: array<array<option<'a>>>): int => {
-//  arr->Js.Array2.reduce((sum, answers) => {
-//    sum + answers->byQuestion->dedupe->Array.length
-//  }, 0)
-//}
-
-//sample->byGroup->byPerson->flatten->byQuestion->dedupe->Js.log
-sample->byGroup->byPerson->Array.map(arr => arr->byQuestion)->Js.log
-
-// Part 1
-//sample->byGroup->byPerson->sumDedupeWeight->Js.log // 11
-//Year2020Day6Input.input->byGroup->byPerson->sumDedupeWeight->Js.log // 6726
-
-// Part 2
-//sample->byGroup->byPerson->sumIntersectWeight->Js.log
-*/
+sample->getAnswerPart2->Js.log // 6
+Year2020Day6Input.input->getAnswerPart2->Js.log // 3316
