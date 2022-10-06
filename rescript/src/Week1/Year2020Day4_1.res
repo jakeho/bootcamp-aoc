@@ -39,6 +39,7 @@ All fields should be placed except cid. cid treated as an optional field.
 //}
 // Map? Record? Dict?
 let parser = (input: string): array<Map.String.t<string>> => {
+  let keyValueRegexp = %re("/^(\w+):([\w\d#]+)/g")
   input
   ->Js.String2.trim
   ->Js.String2.split("\n\n")
@@ -48,8 +49,8 @@ let parser = (input: string): array<Map.String.t<string>> => {
     ->Js.String2.replaceByRe(%re("/\\n/g"), " ")
     ->Js.String2.split(" ")
     ->Array.reduce(Map.String.empty, (passport, fieldAndValue) => {
-      let key = fieldAndValue->Js.String2.replaceByRe(%re("/^(\w+):([\w\d#]+)/g"), "$1")
-      let value = fieldAndValue->Js.String2.replaceByRe(%re("/^(\w+):([\w\d#]+)/g"), "$2")
+      let key = fieldAndValue->Js.String2.replaceByRe(keyValueRegexp, "$1")
+      let value = fieldAndValue->Js.String2.replaceByRe(keyValueRegexp, "$2")
 
       passport->Map.String.set(key, value)
     })
