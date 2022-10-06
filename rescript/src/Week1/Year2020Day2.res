@@ -37,8 +37,20 @@ let validator = ((min, max, key, passwd): (int, int, string, string)): bool => {
   keyCount >= min && keyCount <= max
 }
 
+let validator2 = ((first, second, key, passwd): (int, int, string, string)): bool => {
+  let charAtFirstPosition = passwd->Js.String2.charAt(first - 1)
+  let charAtSecondPosition = passwd->Js.String2.charAt(second - 1)
+
+  switch key === charAtFirstPosition {
+  | true => key === charAtSecondPosition ? false : true
+  | false => key === charAtSecondPosition ? true : false
+  }
+}
+
 let validCounter = (cnt: int, state: bool): int => state ? cnt + 1 : cnt
 
+// Part1
+Js.log("Part1")
 Year2020Day2Input.sample
 ->parser
 ->Array.map(validator)
@@ -48,5 +60,19 @@ Year2020Day2Input.sample
 Year2020Day2Input.input
 ->parser
 ->Array.map(validator)
+->Array.reduce(0, validCounter)
+->Js.log2("valid password(s) found.")
+
+// Part2
+Js.log("\n\nPart1")
+Year2020Day2Input.sample
+->parser
+->Array.map(validator2)
+->Array.reduce(0, validCounter)
+->Js.log2("valid password(s) found.")
+
+Year2020Day2Input.input
+->parser
+->Array.map(validator2)
 ->Array.reduce(0, validCounter)
 ->Js.log2("valid password(s) found.")
