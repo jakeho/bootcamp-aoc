@@ -31,15 +31,20 @@ type passport = {
 
 let yearParser = (year: string, min: int, max: int): option<year> => {
   switch Js.Re.test_(%re("/^\\d{4}$/g"), year) {
-  | true => year->Js.String2.trim->Int.fromString->Option.getWithDefault(0)->Year->Some
+  | true =>
+    switch year->Js.String2.trim->Int.fromString->Option.getWithDefault(0) {
+    | y => y >= min && y <= max ? y->Year->Some : None
+    }
   | false => None
   }
 }
 
 let requiredFields = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
-let hasRequiredFields = (passport: Map.String.t<string>): bool => {
+let hasRequiredFields = (passport: Map.String.t<string>): option<Map.String.t<string>> => {
   let keysInPassport = passport->Map.String.keysToArray
   requiredFields->Array.every(field => keysInPassport->Js.Array2.includes(field))
+    ? Some(passport)
+    : None
 }
 
 let validCounter = (cnt: int, state: bool): int => state ? cnt + 1 : cnt
@@ -63,6 +68,20 @@ let parser = (input: string) => {
     })
   })
 }
+
+let parser2 = (input: array<Map.String.t<string>>) => {
+  let _ = input->Array.map(hasRequiredFields)->Js.log
+  //  let keyValueRegexp = %re("/^(\w+):([\w\d#]+)/g")
+  //  input
+  //  ->Js.String2.trim
+  //  ->Js.String2.split("\n\n")
+  //  ->Array.map(unCheckedPassport => {
+  //    // ['ecl:gry','pid:860033327','eyr:2020','hcl:#fffffd','byr:1937','iyr:2017','cid:147','hgt:183cm']
+  //    unCheckedPassport->Js.String2.replaceByRe(%re("/\\n/g"), " ")
+  //  })
+}
+
+Year2020Day4Input.sample->parser->parser2
 
 /**
 Requirements for the Part 2
@@ -110,30 +129,21 @@ let pidValidator = (pid: string) => {
   }
 }
 
-let hasValidValues = (passport: Map.String.t<string>): bool => {
-  //  passport
-  //  ->Map.String.getWithDefault("byr", "")
-  //  ->Int.fromString
-  //  ->Option.getWithDefault(0)
-  //  ->byrValidator
-  //  ->Js.log
-  false
-}
-
 // Part1
 Js.log("Part 1")
 Year2020Day4Input.sample
 ->parser
 ->Array.map(hasRequiredFields)
-->Array.reduce(0, validCounter)
+->Array.keepMap(pass => pass)
+->Array.length
 ->Js.log2("passport(s) are valid.") // 2
 
 Year2020Day4Input.input
 ->parser
 ->Array.map(hasRequiredFields)
-->Array.reduce(0, validCounter)
+->Array.keepMap(pass => pass)
+->Array.length
 ->Js.log2("passport(s) are valid.") // 260
 
 // Part2
 Js.log("\n\nPart 2")
-let _ = Year2020Day4Input.sample->parser->Array.map(hasValidValues)
