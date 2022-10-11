@@ -12,31 +12,27 @@ ecl (Eye Color)
 pid (Passport ID)
 cid (Country ID)
 */
-type eyeColor = AMB | BLU | BRN | GRY | GRN | HZL | OTH
-type year = Year(int)
+type byr = BYR(int)
+type iyr = IYR(int)
+type eyr = EYR(int)
+type hgt = CM(int) | INCH(int)
+type hcl = string
+type ecl = AMB | BLU | BRN | GRY | GRN | HZL | OTH
+type pid = string
+type yearTypes = BYR(int) | IYR(int) | EYR(int) | None
 /*
 All fields should be placed except cid. cid treated as an optional field.
 */
 type passport = {
-  byr: year,
-  iyr: year,
-  eyr: year,
-  hgt: string,
-  hcl: string,
-  ecl: eyeColor,
-  pid: string,
+  byr: byr,
+  iyr: iyr,
+  eyr: eyr,
+  hgt: hgt,
+  hcl: hcl,
+  ecl: ecl,
+  pid: pid,
   //  cid?: string, // optional field in Record is available from v10
   cid: option<string>,
-}
-
-let yearParser = (year: string, min: int, max: int): option<year> => {
-  switch Js.Re.test_(%re("/^\\d{4}$/g"), year) {
-  | true =>
-    switch year->Js.String2.trim->Int.fromString->Option.getWithDefault(0) {
-    | y => y >= min && y <= max ? y->Year->Some : None
-    }
-  | false => None
-  }
 }
 
 let requiredFields = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
@@ -69,20 +65,134 @@ let parser = (input: string) => {
   })
 }
 
-let parser2 = (input: array<Map.String.t<string>>) => {
-  let _ = input->Array.map(hasRequiredFields)->Js.log
-  //  let keyValueRegexp = %re("/^(\w+):([\w\d#]+)/g")
-  //  input
-  //  ->Js.String2.trim
-  //  ->Js.String2.split("\n\n")
-  //  ->Array.map(unCheckedPassport => {
-  //    // ['ecl:gry','pid:860033327','eyr:2020','hcl:#fffffd','byr:1937','iyr:2017','cid:147','hgt:183cm']
-  //    unCheckedPassport->Js.String2.replaceByRe(%re("/\\n/g"), " ")
-  //  })
+/*
+Having separate validators for each field? How to store and applying them?
+If they are declared as functions, you should know which function is a proper validator among the fields.
+Variant? Pattern matching? 🤔
+Let me start with the easiest way.
+*/
+
+let optStringToOptInt = (str: option<string>) =>
+  str->Option.getWithDefault("")->Js.String2.trim->Int.fromString
+
+// Checks the string is int and in the given range.
+let isYearBetween = (year: option<string>, min: int, max: int): bool => {
+  switch Js.Re.test_(%re("/^\\d{4}$/g"), year->Option.getWithDefault("")) {
+  | true =>
+    switch year->optStringToOptInt->Option.getWithDefault(0) {
+    | y => y >= min && y <= max
+    }
+  | false => false
+  }
+}
+let isByr = (year: option<string>) => year->isYearBetween(1920, 2002)
+let isIyr = (year: option<string>) => year->isYearBetween(2010, 2020)
+let isEyr = (year: option<string>) => year->isYearBetween(2020, 2030)
+let isHcl = (color: string) => {
+  switch Js.Re.exec_(%re("/^#[a-f\d]{6}$/g"), color) {
+  | Some(_) => true
+  | None => false
+  }
 }
 
-Year2020Day4Input.sample->parser->parser2
+let eclParser = (color: string): option<ecl> => {
+  switch color {
+  | "amb" => Some(AMB)
+  | "blu" => Some(BLU)
+  | "brn" => Some(BRN)
+  | "gry" => Some(GRY)
+  | "grn" => Some(GRN)
+  | "hzl" => Some(HZL)
+  | "oth" => Some(OTH)
+  | _ => None
+  }
+}
 
+let hgtValidatorCm = (value: int) => {
+  value >= 150 && value <= 193
+}
+
+let hgtValidatorInch = (value: int) => {
+  value >= 59 && value <= 76
+}
+
+let hgtParser = (hgt: string): option<hgt> => {
+  let regExp = %re("/^(\\d+)(cm|in){1}$/g")
+  let size = hgt->Js_string2.replaceByRe(regExp, "$1")
+  let unit = hgt->Js_string2.replaceByRe(regExp, "$2")
+  let matched = Js_re.exec_(regExp, hgt)->Option.isSome
+  switch matched && size !== "" && unit !== "" {
+  | true =>
+    let intSize = size->Int.fromString->Option.getExn
+    switch unit {
+    | "cm" => hgtValidatorCm(intSize) ? Some(CM(intSize)) : None
+    | "in" => hgtValidatorInch(intSize) ? Some(INCH(intSize)) : None
+    | _ => None
+    }
+  | false => None
+  }
+}
+
+let isPid = (pid: string) => {
+  switch Js.Re.exec_(%re("/^[0-9]{9}$/g"), pid) {
+  | Some(_) => true
+  | None => false
+  }
+}
+
+let parser2 = (input: array<Map.String.t<string>>): array<option<passport>> => {
+  input
+  ->Array.keepMap(hasRequiredFields)
+  ->Array.map(candidate => {
+    let byr = candidate->Map.String.get("byr")
+    let iyr = candidate->Map.String.get("iyr")
+    let eyr = candidate->Map.String.get("eyr")
+    let hgt = candidate->Map.String.get("hgt")->Option.getWithDefault("")->hgtParser
+    let hcl = candidate->Map.String.get("hcl")
+    let ecl = candidate->Map.String.get("ecl")->Option.getWithDefault("")->eclParser
+    let pid = candidate->Map.String.get("pid")
+    let cid = candidate->Map.String.get("cid")
+    // It might be reasonable and affordable to check all fields...
+    // But... is there any other way better than this?
+
+    switch byr->isByr &&
+    iyr->isIyr &&
+    eyr->isEyr &&
+    hgt->Option.isSome &&
+    hcl->Option.getWithDefault("")->isHcl &&
+    ecl->Option.isSome &&
+    pid->Option.getWithDefault("")->isPid {
+    | true =>
+      Some({
+        byr: BYR(byr->optStringToOptInt->Option.getWithDefault(0)),
+        iyr: IYR(iyr->optStringToOptInt->Option.getWithDefault(0)),
+        eyr: EYR(eyr->optStringToOptInt->Option.getWithDefault(0)),
+        hgt: hgt->Option.getExn,
+        hcl: hcl->Option.getWithDefault(""),
+        ecl: ecl->Option.getExn,
+        pid: pid->Option.getWithDefault(""),
+        cid: cid,
+      })
+    | false => None
+    }
+  })
+}
+
+// Part1
+Js.log("Part 1")
+Year2020Day4Input.sample
+->parser
+->Array.keepMap(hasRequiredFields)
+->Array.length
+->Js.log2("passport(s) are valid.") // 2
+
+Year2020Day4Input.input
+->parser
+->Array.keepMap(hasRequiredFields)
+->Array.length
+->Js.log2("passport(s) are valid.") // 260
+
+// Part2
 /**
 Requirements for the Part 2
 byr (Birth Year) - four digits; at least 1920 and at most 2002.
@@ -95,55 +205,7 @@ hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
 ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
 pid (Passport ID) - a nine-digit number, including leading zeroes.
 cid (Country ID) - ignored, missing or not.
-
-Having separate validators for each field? How to store and applying them?
-If they are declared as functions, you should know which function is a proper validator among the fields.
-Variant? Pattern matching? 🤔
-Let me start with the easiest way.
 */
-let byrValidator = (year: int) => year >= 1920 && year <= 2002
-let iyrValidator = (year: int) => year >= 2010 && year <= 2020
-let eyrValidator = (year: int) => year >= 2020 && year <= 2030
-let hgtValidator = (height: string) => {
-  switch height |> Js.Re.exec_(%re("/^\d+(cm|in)$/g")) {
-  | Some(_) => true // Need to check the number according to the unit.
-  | None => false
-  }
-}
-let hclValidator = (color: string) => {
-  switch color |> Js.Re.exec_(%re("/^#[a-f\d]{6}$/g")) {
-  | Some(_) => true
-  | None => false
-  }
-}
-
-let eclValidator = (eyeColor: eyeColor) => {
-  switch eyeColor {
-  | AMB | BLU | BRN | GRY | GRN | HZL | OTH => true
-  }
-} // How to map the string value with the types?
-let pidValidator = (pid: string) => {
-  switch pid |> Js.Re.exec_(%re("/^[0-9]{9}$/g")) {
-  | Some(_) => true
-  | None => false
-  }
-}
-
-// Part1
-Js.log("Part 1")
-Year2020Day4Input.sample
-->parser
-->Array.map(hasRequiredFields)
-->Array.keepMap(pass => pass)
-->Array.length
-->Js.log2("passport(s) are valid.") // 2
-
-Year2020Day4Input.input
-->parser
-->Array.map(hasRequiredFields)
-->Array.keepMap(pass => pass)
-->Array.length
-->Js.log2("passport(s) are valid.") // 260
-
-// Part2
 Js.log("\n\nPart 2")
+Year2020Day4Input.sample->parser->parser2->Array.keepMap(passport => passport)->Array.length->Js.log
+Year2020Day4Input.input->parser->parser2->Array.keepMap(passport => passport)->Array.length->Js.log
