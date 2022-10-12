@@ -16,10 +16,21 @@ type byr = BYR(int)
 type iyr = IYR(int)
 type eyr = EYR(int)
 type hgt = CM(int) | INCH(int)
+// type hcl = HEX(string)
 type hcl = string
 type ecl = AMB | BLU | BRN | GRY | GRN | HZL | OTH
 type pid = string
 type yearTypes = BYR(int) | IYR(int) | EYR(int) | None
+
+let hgtVal = CM(100)
+let hgtVal2 = INCH(100)
+
+let _ = switch hgtVal {
+| CM(hgtVal') => hgtVal'->Js.log2("is the type of CM")
+| INCH(hgtVal') => hgtVal'->Js.log2("is the type of INCH")
+| _ => Js.log("Not the type")
+}
+
 /*
 All fields should be placed except cid. cid treated as an optional field.
 */
@@ -46,7 +57,7 @@ let hasRequiredFields = (passport: Map.String.t<string>): option<Map.String.t<st
 let validCounter = (cnt: int, state: bool): int => state ? cnt + 1 : cnt
 
 // Parse, don't validate
-let parser = (input: string) => {
+let parser = (input: string): array<Map.String.t<string>> => {
   let keyValueRegexp = %re("/^(\w+):([\w\d#]+)/g")
   input
   ->Js.String2.trim
@@ -64,6 +75,16 @@ let parser = (input: string) => {
     })
   })
 }
+
+// input:string -> Map.String.t -> array<option<passport>> -> array<passport>
+// ~~phantom type: 유령타입~~
+// type parameter
+type invalid
+type valid
+type pp<'a> = {name: string, age: int}
+let p1: pp<invalid> = {name: "toss", age: 3}
+let p2: pp<valid> = {name: "greenlabs", age: 3}
+// input:string -> Map.String.t -> array<passport<invalid>> -> array<passport<valid>>
 
 /*
 Having separate validators for each field? How to store and applying them?
@@ -140,10 +161,10 @@ let isPid = (pid: string) => {
   }
 }
 
-let parser2 = (input: array<Map.String.t<string>>): array<option<passport>> => {
+let parser2 = (input: array<Map.String.t<string>>): array<passport> => {
   input
   ->Array.keepMap(hasRequiredFields)
-  ->Array.map(candidate => {
+  ->Array.keepMap(candidate => {
     let byr = candidate->Map.String.get("byr")
     let iyr = candidate->Map.String.get("iyr")
     let eyr = candidate->Map.String.get("eyr")
@@ -207,5 +228,30 @@ pid (Passport ID) - a nine-digit number, including leading zeroes.
 cid (Country ID) - ignored, missing or not.
 */
 Js.log("\n\nPart 2")
-Year2020Day4Input.sample->parser->parser2->Array.keepMap(passport => passport)->Array.length->Js.log
-Year2020Day4Input.input->parser->parser2->Array.keepMap(passport => passport)->Array.length->Js.log
+Year2020Day4Input.sample->parser->parser2->Array.length->Js.log // 2
+Year2020Day4Input.input->parser->parser2->Array.length->Js.log // 153
+
+// parser generator
+// parser: input -> data
+// parser generator: pred -> parser
+
+// module Passport = {
+//   type t = {name: string, age: int}
+//   let isEcl = ...
+//   let isHcl = ...
+// }
+
+// module Parser = {
+//   type t
+//   type make: (regExp, array<string => bool>) => t
+//   type parse: (t, string) => array<option<Passport.t>>
+// }
+
+// input->Parser.make(...,[Passport.isEcl, Passport.isHcl])->Parser.parse
+
+// Passport_Korea.res <- 2) x
+// Passport.res
+// module Korea = Passport_Korea <- 1) 먼저 여기로
+
+// application
+// Passport.Korea.x
